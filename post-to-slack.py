@@ -31,22 +31,18 @@ def prepare_text_error(args):
     return u'FAILURE: {}'.format(args.text)
 
 
-def prepare_icon(icon_name):
-    return u':{}:'.format(icon_name)
-
-
 def prepare_data(args):
     payload = {
         'channel': args.channel,
         'username': args.username,
         'text': args.text,
-        'icon_emoji': prepare_icon(args.icon_emoji)
+        'icon_emoji': args.icon_emoji
     }
 
     if args.exit_status is not None and args.exit_status != 0:
         payload.update({
             'text': prepare_text_error(args),
-            'icon_emoji': prepare_icon(args.icon_error)
+            'icon_emoji': args.icon_error
         })
 
     return payload
@@ -75,7 +71,7 @@ if __name__ == '__main__':
                         help='The name of your bot')
 
     parser.add_argument('-i', '--icon-emoji',
-                        default=os.environ.get('SLACK_ICON', 'smile'),
+                        default=os.environ.get('SLACK_ICON', ':smile:'),
                         help='The icon of your bot')
 
     parser.add_argument('-t', '--text',
@@ -83,7 +79,7 @@ if __name__ == '__main__':
                         help='The message to send')
 
     parser.add_argument('--icon-error',
-                        default=os.environ.get('SLACK_ICON_ERROR', 'fearful'),
+                        default=os.environ.get('SLACK_ICON_ERROR', ':fearful:'),
                         help='The icon to use in case of error')
 
     parser.add_argument('--text-error',
