@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''Post a message to Slack.
 
 Useful when you run commands automatically, e.g. in a crontab, and you need
@@ -18,21 +18,20 @@ some of the params here:
 '''
 
 import argparse
+import getpass
 import json
 import os
-import subprocess
 import platform
+import subprocess
 import sys
+
 from datetime import datetime
 from tempfile import NamedTemporaryFile
-from urllib2 import urlopen
+from urllib.request import urlopen
 
 
-def prepare_text_error(args):
-    if args.text_error:
-        return args.text_error
-
-    return u'FAILURE: {}'.format(args.text)
+def e(s):
+    return s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
 
 
 def read_and_truncate(f, size=1024, relax=10, encoding='UTF-8'):
@@ -46,9 +45,16 @@ def read_and_truncate(f, size=1024, relax=10, encoding='UTF-8'):
     data = data.decode(encoding)
 
     if filesize > size:
-        data = u'\n'.join([data, u'[...{} bytes truncated]'.format(filesize - size)])
+        data = '\n'.join([data, '[...{} bytes truncated]'.format(filesize - size)])
 
     return data
+
+
+def get_random_text():
+    try:
+        return e(subprocess.check_output(['fortune']).decode(sys.stdout.encoding))
+    except FileNotFoundError:
+        return 'I love cats!'
 
 
 def execute_command(command):
@@ -68,43 +74,82 @@ def execute_command(command):
 
     return proc.returncode, stdout_data, stderr_data, delta
 
-def prepare_data(args):
-    exit_status = args.exit_status
-    text = args.text
 
-    if args.command:
-        exit_status, stdout, stderr, delta = execute_command(args.command)
-        text = [u'command: `{}`'.format(u' '.join(args.command))]
-        text.append('execution time: {}'.format(delta))
+def prepare_command(command):
+    exit_code, stdout, stderr, delta = execute_command(command)
 
-        if exit_status != 0:
-            text.append(u'exit code: {}'.format(exit_status))
-        if stdout:
-            text.append('')
-            text.append('```{}```'.format(stdout))
-        if stderr:
-            text.append('')
-            text.append('```{}```'.format(stderr))
+    plain_command = ' '.join(command)
 
-        text = u'\n'.join(text)
-
-    payload = {
-        'channel': args.channel,
-        'username': args.username,
-        'text': text,
-        'icon_emoji': args.icon_emoji
+    attachment = {
+        'color': 'good',
+        'fallback': None,
+        # 'text': None,
+        # 'pretext': None,
+        'mrkdwn_in': ['pretext', 'text', 'fields'],
+        'fields': [{
+            'title': 'command',
+            'value': e('`{}`'.format(plain_command)),
+            'short': True
+        }, {
+            'title': 'execution time',
+            'value': unicode(delta),
+            'short': True
+        }]
     }
 
-    if exit_status is not None and exit_status != 0:
-        payload.update({
-            'icon_emoji': args.icon_error
+    if exit_code != 0:
+        attachment['color'] = 'danger'
+        attachment['fallback'] = e('[exit code: {}] Failed to execute: {}'.format(exit_code, plain_command))
+        attachment['fields'].append({
+            'title': 'exit code',
+            'value': exit_code,
+            'short': True
         })
+        attachment['fields'].append({
+            'title': 'stderr',
+            'value': e('```{}```'.format(stderr) if stderr else '_no output_')
+        })
+    else:
+        attachment['fallback'] = e('Succeded to execute: {}'.format(plain_command))
+        attachment['fields'].append({
+            'title': 'stdout',
+            'value': e('```{}```'.format(stdout) if stdout else '_no output_')
+        })
+
+    return attachment
+
+
+def prepare_data(args):
+    text = [args.text]
+
+    if not sys.stdin.isatty():
+        text.append('```{}```'.format(sys.stdin.read()))
+
+    channel = args.channel
+
+    if channel[0] not in ('#', '@'):
+        channel = '#{}'.format(channel)
+
+    text = list(filter(bool, text))
+
+    if not text:
+        text = [get_random_text()]
+
+    payload = {
+        'channel': channel,
+        'username': args.username,
+        'text': e('\n'.join(text)),
+        'icon_emoji': args.icon_emoji,
+    }
+
+    if args.command:
+        payload['attachments'] = [prepare_command(args.command)]
 
     return payload
 
 
 def post_data(url, payload):
-    urlopen(url, data=json.dumps(payload))
+    urlopen(url, data=json.dumps(payload).encode('utf-8'))
 
 
 def main(args):
@@ -118,44 +163,26 @@ if __name__ == '__main__':
 
     parser.add_argument('-c', '--channel',
                         default=os.environ.get('SLACK_CHANNEL', '#general'),
-                        help='Can be a #channel or a direct message to a @username '
+                        help='Can be a (#)channel or a direct message to a @username '
                              '(default: $SLACK_CHANNEL or #general)')
 
     parser.add_argument('-u', '--username',
                         default=os.environ.get('SLACK_USERNAME',
-                                                platform.node() or 'a nice bot'),
-                        help='The name of your bot '
-                             '(default: $SLACK_USERNAME, hostname or "a nice bot")')
+                                                '{}@{}'.format(getpass.getuser(),
+                                                                platform.node())),
+                        help='The name of your bot (default: $SLACK_USERNAME, hostname)')
 
     parser.add_argument('-i', '--icon-emoji',
-                        default=os.environ.get('SLACK_ICON', ':smile:'),
-                        help='The icon of your bot '
-                             '(default: $SLACK_ICON or ":smile:")')
+                        default=os.environ.get('SLACK_ICON', ':robot_face:'),
+                        help='The icon of your bot (default: $SLACK_ICON or ":robot_face:")')
 
     parser.add_argument('-t', '--text',
-                        default=os.environ.get('SLACK_TEXT', 'it works!'),
-                        help='The message to send '
-                             '(default: $SLACK_TEXT or "it works!")')
+                        default=os.environ.get('SLACK_TEXT'),
+                        help='The message to send (default: $SLACK_TEXT or something different)')
 
-    parser.add_argument('--icon-error',
-                        default=os.environ.get('SLACK_ICON_ERROR', ':fearful:'),
-                        help='The icon to use in case of error '
-                             '(default: $SLACK_ICON_ERROR or ":fearful:")')
-
-    parser.add_argument('--text-error',
-                        default=os.environ.get('SLACK_TEXT_ERROR'),
-                        help='The message to send in case of error '
-                             '(default: $SLACK_ICON_ERROR or ":fearful:")')
-
-    parser.add_argument('--exit-status',
-                        type=int,
-                        help='The flag to use to trigger an error message '
-                             '(you can use the env variable `$?`)')
-
-    parser.add_argument('webhook_url',
+    parser.add_argument('-w', '--webhook-url',
                         default=os.environ.get('SLACK_WEBHOOK_URL'),
-                        help='The URL to use to post the message'
-                             '(default: $SLACK_WEBHOOK_URL')
+                        help='The URL to use to post the message (default: $SLACK_WEBHOOK_URL')
 
     parser.add_argument('command',
                         nargs='?',
