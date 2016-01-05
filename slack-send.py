@@ -122,8 +122,11 @@ def prepare_command(command):
 def prepare_data(args):
     text = [args.text]
 
-    if not sys.stdin.isatty():
+    if args.file == '-':
         text.append('```{}```'.format(sys.stdin.read()))
+    elif args.file:
+        with open(args.file) as f:
+            text.append('```{}```'.format(f.read()))
 
     channel = args.channel
 
@@ -183,6 +186,9 @@ if __name__ == '__main__':
     parser.add_argument('-w', '--webhook-url',
                         default=os.environ.get('SLACK_WEBHOOK_URL'),
                         help='The URL to use to post the message (default: $SLACK_WEBHOOK_URL')
+
+    parser.add_argument('-f', '--file',
+                        help='Send the content of the specified file. Use - for stdin.')
 
     parser.add_argument('command',
                         nargs='?',
