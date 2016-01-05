@@ -135,7 +135,7 @@ def prepare_data(args):
 
     text = list(filter(bool, text))
 
-    if not text:
+    if not text and not args.command:
         text = [get_random_text()]
 
     payload = {
