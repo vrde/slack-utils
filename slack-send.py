@@ -92,7 +92,7 @@ def prepare_command(command):
             'short': True
         }, {
             'title': 'execution time',
-            'value': unicode(delta),
+            'value': str(delta),
             'short': True
         }]
     }
