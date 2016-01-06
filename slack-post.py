@@ -188,7 +188,7 @@ if __name__ == '__main__':
                         help='The URL to use to post the message (default: $SLACK_WEBHOOK_URL')
 
     parser.add_argument('-f', '--file',
-                        help='Send the content of the specified file. Use - for stdin.')
+                        help='Post the content of a text file. Use - for stdin.')
 
     parser.add_argument('command',
                         nargs='?',
