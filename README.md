@@ -48,8 +48,7 @@ optional arguments:
   -w WEBHOOK_URL, --webhook-url WEBHOOK_URL
                         The URL to use to post the message (default:
                         $SLACK_WEBHOOK_URL
-  -f FILE, --file FILE  Send the content of the specified file. Use - for
-                        stdin.
+  -f FILE, --file FILE  Post the content of a text file. Use - for stdin.
 ```
 
 Note that most of the arguments, if not defined, will fall back to their relative environment variable.
