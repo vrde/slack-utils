@@ -197,4 +197,7 @@ if __name__ == '__main__':
     args, extra = parser.parse_known_args()
     if args.command:
         args.command = [args.command] + extra
+    if not args.webhook_url:
+        parser.error('Please either set the $SLACK_WEBHOOK_URL variable, or '
+                     'provide a value for the -w parameter')
     main(args)

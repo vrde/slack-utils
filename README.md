@@ -60,7 +60,7 @@ Pro tip: install `fortune` in the same machine where the script runs for major f
 
 All the examples make use of the `$SLACK_WEBHOOK_URL` variable. Set it now:
 ```bash
-$ SLACK_WEBHOOK_URL=<your-webhook-url>
+$ export SLACK_WEBHOOK_URL=<your-webhook-url>
 ```
 
 ## Post a simple message
