@@ -1,6 +1,6 @@
 # Introduction
 
-`slack-post.py` is your Slack Swiss Army Knife. It works using [Incoming Webhooks](https://api.slack.com/incoming-webhooks) and it's written in Python 3 using the Python Standard Library, so **no need to install dependencies**, you can just download the script and run it.
+`slack-post.py` can post text or the output of a command to Slack. It works using [Incoming Webhooks](https://api.slack.com/incoming-webhooks) and it's written in Python 3 using the Python Standard Library, so **no need to install dependencies**, you can just download the script and run it.
 
 The script is able to:
  - post text;
