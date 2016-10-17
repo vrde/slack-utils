@@ -122,34 +122,34 @@ def prepare_command(command):
     return attachment
 
 
-def prepare_data(args):
-    text = [args.text]
+def prepare_data(text, filename, channel, command, username, icon_emoji):
+    text = [text]
 
-    if args.file == '-':
+    if filename == '-':
         text.append('```{}```'.format(sys.stdin.read()))
-    elif args.file:
-        with open(args.file) as f:
+    elif filename:
+        with open(filename) as f:
             text.append('```{}```'.format(f.read()))
 
-    channel = args.channel
+    channel = channel
 
     if channel[0] not in ('#', '@'):
         channel = '#{}'.format(channel)
 
     text = list(filter(bool, text))
 
-    if not text and not args.command:
+    if not text and not command:
         text = [get_random_text()]
 
     payload = {
         'channel': channel,
-        'username': args.username,
+        'username': username,
         'text': e('\n'.join(text)),
-        'icon_emoji': args.icon_emoji,
+        'icon_emoji': icon_emoji,
     }
 
-    if args.command:
-        payload['attachments'] = [prepare_command(args.command)]
+    if command:
+        payload['attachments'] = [prepare_command(command)]
 
     return payload
 
@@ -159,7 +159,8 @@ def post_data(url, payload):
 
 
 def main(args):
-    payload = prepare_data(args)
+    payload = prepare_data(args.text, args.file, args.channel,
+                           args.command, args.username, args.icon_emoji)
     post_data(args.webhook_url, payload)
 
 
