@@ -27,7 +27,10 @@ import sys
 
 from datetime import datetime
 from tempfile import NamedTemporaryFile
-from urllib.request import urlopen
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib2 import urlopen
 
 
 def e(s):
@@ -192,7 +195,7 @@ if __name__ == '__main__':
 
     parser.add_argument('command',
                         nargs='?',
-                        help='The command to execute') 
+                        help='The command to execute')
 
     args, extra = parser.parse_known_args()
     if args.command:
