@@ -45,7 +45,8 @@ def read_and_truncate(f, size=1024, relax=10, encoding='UTF-8'):
         size = filesize
 
     data = f.read(size)
-    data = data.decode(encoding)
+    if encoding:
+        data = data.decode(encoding)
 
     if filesize > size:
         data = '\n'.join([data, '[...{} bytes truncated]'.format(filesize - size)])
