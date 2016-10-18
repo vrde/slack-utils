@@ -122,7 +122,8 @@ def prepare_command(command):
     return attachment
 
 
-def prepare_data(text, filename, channel, command, username, icon_emoji):
+def prepare_data(text=None, filename=None, channel=None, command=None,
+                 username=None, icon_emoji=None):
     text = [text]
 
     if filename == '-':
